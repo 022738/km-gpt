@@ -16,14 +16,14 @@ from google.oauth2 import service_account
 scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 persist_directory = 'vectordb'
 SAMPLE_SPREADSHEET_ID = '1Ctnp3t1mSly30ukrz9rYcEp5asA-PzrN11YvpZkg18k'
-SAMPLE_RANGE_NAME = 'Documents!A2:A5'
+SAMPLE_RANGE_NAME = 'Documents!A2:A22'
 logging.basicConfig(filename='output.txt', level=logging.INFO, format='')
 embeddings = OpenAIEmbeddings()
 
 if os.path.exists('/home/matt_cheung/.credentials/keys.json'):
         
     creds = service_account.Credentials.from_service_account_file('/home/matt_cheung/.credentials/keys.json', scopes=scopes)
-
+#get the document ids to train the model
     try:
     
         service = build('sheets', 'v4', credentials=creds)
@@ -45,17 +45,18 @@ if os.path.exists('/home/matt_cheung/.credentials/keys.json'):
     
     except HttpError as err:
         print(err)
-
+#get the contents of the documents
 loader = GoogleDriveLoader(
    document_ids=docs_to_index
    )
 docs = loader.load()
-
+#split the docs into chunks
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=4000, chunk_overlap=0, separators=[" ", ",", "\n"]
      )
 texts = text_splitter.split_documents(docs)
-#    embeddings = OpenAIEmbeddings()
+
+embeddings = OpenAIEmbeddings()
 db =Chroma.from_documents(documents=texts, embedding=embeddings, persist_directory=persist_directory) 
 
 print("completed loading", db)
