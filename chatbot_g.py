@@ -17,7 +17,8 @@ print("I do think I have a db", db)
 retriever = db.as_retriever()
 
 llm = VertexAI(temperature=0)
-qa = ConversationalRetrievalChain.from_llm(llm=llm, retriever=retriever,memory=memory)
+qa = ConversationalRetrievalChain.from_llm(llm=llm, retriever=retriever,
+        memory=memory, return_source_documents=True)
 
 #while True:
 #    query = input("> ")
@@ -37,7 +38,9 @@ def chatbot_g (query):
             memory.clear()
             answer = "I've wiped our conversation"
         else:
-            answer = qa.run({"question": query, "chat_history": ConversationBufferMemory()})
-        
-        
+            try:
+                answer = qa({"question": query, "chat_history": ConversationBufferMemory()})
+                formattedanswer = answer['answer'] + "\nTitle: " +  answer['source_documents'][0].metadata['title'] + "\nFile url: " +  answer['source_documents'][0].metadata['source'] 
+            except Exception as err:
+                answer = "An error occurred. Context: "+err.message
         return answer
