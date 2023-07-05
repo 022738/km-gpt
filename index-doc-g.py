@@ -14,39 +14,50 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 
-scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+scopes = ['https://www.googleapis.com/auth/drive.readonly','https://www.googleapis.com/auth/spreadsheets.readonly']
 #changed persist directory to run google in paralell
 persist_directory = 'gvectordb'
 SAMPLE_SPREADSHEET_ID = '1Ctnp3t1mSly30ukrz9rYcEp5asA-PzrN11YvpZkg18k'
-SAMPLE_RANGE_NAME = 'Documents!A2:A22'
+SAMPLE_RANGE_NAME = 'Documents!A2:A122'
 logging.basicConfig(filename='output.txt', level=logging.INFO, format='')
 embeddings = VertexAIEmbeddings()
-
+docs_to_index=[]
 if os.path.exists('/home/matt_cheung/.credentials/keys.json'):
-        
+    print("setting up creds")    
     creds = service_account.Credentials.from_service_account_file('/home/matt_cheung/.credentials/keys.json', scopes=scopes)
 #get the document ids to train the model
-    try:
-    
-        service = build('sheets', 'v4', credentials=creds)
-
+    print("create service")
+    service = build('sheets', 'v4', credentials=creds)
+    print("create drive service")
+    driveservice = build("drive", "v3", credentials=creds)
+        
     # Call the Sheets API
-        sheet = service.spreadsheets()
-        result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
-                                    range=SAMPLE_RANGE_NAME).execute()
-        values = result.get('values', [])
+    sheet = service.spreadsheets()
+    result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
+                                range=SAMPLE_RANGE_NAME).execute()
+    values = result.get('values', [])
 
-        if not values:
-            print('No data found.')
-        docs_to_index =[] 
+    if not values:
+        print('No data found.')
         print('Received these documents to index')
-        for row in values:
+    for row in values:
+        # Print columns A and E, which correspond to indices 0 and 4.
+        # Check that service agent can access
+        print('processing %s', row[0])
+        try:
+            file = driveservice.files().get(fileId=row[0], supportsAllDrives=True).execute()
+            print(HttpError)
             # Print columns A and E, which correspond to indices 0 and 4.
             print('%s' % (row[0]))
-            docs_to_index.append(row[0])
+            docs_to_index.append(row[0])                
+        except HttpError as e:
+            if e.resp.status == 404:
+                print("File not found: {}".format(row[0]))
+            else:
+                print("An error occurred: {}".format(e))
+            
+
     
-    except HttpError as err:
-        print(err)
 #get the contents of the documents
 loader = GoogleDriveLoader(
    document_ids=docs_to_index
