@@ -20,17 +20,24 @@ llm = VertexAI(temperature=0)
 qa = ConversationalRetrievalChain.from_llm(llm=llm, retriever=retriever,memory=memory)
 
 #while True:
- #   query = input("> ")
- #   answer = qa.run({"question": query,"chat_history": chat_history})
- #   chat_history = [(query, answer)] 
- #   print(answer)
+#    query = input("> ")
+#    if query =="clear memory":
+#        memory.clear()
+#        answer = "I've wiped our conversation"
+#    else: 
+#        answer = qa.run({"question": query,"chat_history": ConversationBufferMemory()})
+ 
+#    print(answer)
 
 def chatbot_g (query):
-   # chat_history=[]
+ 
     while True:
-       # memory.save_context({"input": "hi"}, {"output": "whats up"})
-        #answer = qa.run({"question": query,"chat_history": chat_history})
-        answer = qa.run({"question": query, "chat_history": ConversationBufferMemory()})
-        #chat_history = [(query, answer)] 
-        #memory.save_context({"input": query}, {"output": answer})
+      
+        if query == "clear memory":
+            memory.clear()
+            answer = "I've wiped our conversation"
+        else:
+            answer = qa.run({"question": query, "chat_history": ConversationBufferMemory()})
+        
+        
         return answer
